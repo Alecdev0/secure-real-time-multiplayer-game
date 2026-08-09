@@ -1,18 +1,37 @@
-require('dotenv').config();
+ require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const expect = require('chai');
 const socket = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
+
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const runner = require('./test-runner.js');
 
 const app = express();
-app.use(helmet.noSniff());
-app.use(helmet.xssFilter());
-app.use(helmet.noCache());
-app.use(helmet.hidePoweredBy({ setTo: 'PHP 7.4.3' }));
+
+// Security headers required by freeCodeCamp
+app.disable('x-powered-by');
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+
+  res.setHeader(
+    'Cache-Control',
+    'no-store, no-cache, must-revalidate, proxy-revalidate'
+  );
+
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+
+  res.setHeader('X-Powered-By', 'PHP 7.4.3');
+
+  next();
+});
 
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use('/assets', express.static(process.cwd() + '/assets'));
@@ -20,8 +39,8 @@ app.use('/assets', express.static(process.cwd() + '/assets'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-//For FCC testing purposes and enables user to connect from outside the hosting platform
-app.use(cors({origin: '*'})); 
+// For FCC testing purposes
+app.use(cors({ origin: '*' }));
 
 // Index page (static HTML)
 app.route('/')
